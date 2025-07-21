@@ -135,3 +135,9 @@ class JuegoEscoba:
             if len(sietes) == max(len([c for c in j.capturadas if c.valor == 7]) for j in self.jugadores):
                 puntos[jugador.nombre] += 1
         return puntos
+
+if __name__ == "__main__":
+    juego = JuegoEscoba(["IA_1", "IA_2"])
+    juego.jugar_ronda()
+    print("\n=== PUNTUACIÓN FINAL ===")
+    print(juego.contar_puntos())
