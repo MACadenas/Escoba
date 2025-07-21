@@ -1,5 +1,6 @@
 from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
+from escoba_env import EscobaEnv
 
 # Crear entorno
 env = EscobaEnv()
