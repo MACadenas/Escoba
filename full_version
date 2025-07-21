@@ -1,0 +1,137 @@
+import random
+
+class Baraja:
+    def __init__(self):
+        palos = ["oros", "copas", "espadas", "bastos"]
+        valores = list(range(1, 8)) + [10, 11, 12]
+        self.cartas = [Carta(p, v) for p in palos for v in valores]
+        random.shuffle(self.cartas)
+
+    def repartir(self, cantidad):
+        """Reparte `cantidad` cartas y las elimina del mazo."""
+        cartas = self.cartas[:cantidad]
+        self.cartas = self.cartas[cantidad:]
+        return cartas
+
+
+class Carta:
+    def __init__(self, palo, valor):
+        self.palo = palo  # "oros", "copas", "espadas", "bastos"
+        self.valor = valor  # 1 al 7, 10, 11, 12
+
+    def puntos(self):
+        """Devuelve el valor numérico para sumar 15 (10=8, 11=9, 12=10)"""
+        return self.valor if self.valor <= 7 else self.valor - 2
+
+    def __repr__(self):
+        nombres = {10: "Sota", 11: "Caballo", 12: "Rey"}
+        nombre_valor = nombres.get(self.valor, str(self.valor))
+        return f"{nombre_valor} de {self.palo}"
+
+
+class Baraja:
+    def __init__(self):
+        palos = ["oros", "copas", "espadas", "bastos"]
+        valores = list(range(1, 8)) + [10, 11, 12]
+        self.cartas = [Carta(p, v) for p in palos for v in valores]
+        random.shuffle(self.cartas)
+
+    def repartir(self, cantidad):
+        """Reparte `cantidad` cartas y las elimina del mazo."""
+        cartas = self.cartas[:cantidad]
+        self.cartas = self.cartas[cantidad:]
+        return cartas
+
+class Jugador:
+    def __init__(self, nombre):
+        self.nombre = nombre
+        self.mano = []
+        self.capturadas = []
+        self.escobas = 0
+
+    def recibir_cartas(self, cartas):
+        self.mano.extend(cartas)
+
+    def capturar(self, jugada, mesa):
+        """Captura una carta y las correspondientes de la mesa."""
+        for c in jugada[1:]:
+            mesa.remove(c)
+        self.capturadas.extend(jugada)
+
+    def __repr__(self):
+        return f"{self.nombre} (Cartas: {len(self.capturadas)}, Escobas: {self.escobas})"
+
+class JuegoEscoba:
+    def __init__(self, jugadores):
+        self.jugadores = [Jugador(nombre) for nombre in jugadores]
+        self.baraja = Baraja()
+        self.mesa = self.baraja.repartir(4)
+
+    def repartir_manos(self):
+        for jugador in self.jugadores:
+            jugador.recibir_cartas(self.baraja.repartir(3))
+
+    def posibles_combinaciones(self, carta, mesa):
+        from itertools import chain, combinations
+        """Devuelve todas las combinaciones de cartas de mesa que suman 15 con la jugada."""
+        def todas_combinaciones(lista):
+            return chain.from_iterable(combinations(lista, r) for r in range(1, len(lista)+1))
+
+        resultado = []
+        for combo in todas_combinaciones(mesa):
+            suma = carta.puntos() + sum(c.puntos() for c in combo)
+            if suma == 15:
+                resultado.append([carta] + list(combo))
+        return resultado
+
+    def turno_jugador(self, jugador):
+        print(f"\nTurno de {jugador.nombre}")
+        print("Mesa:", self.mesa)
+        print("Mano:", jugador.mano)
+
+        for i, carta in enumerate(jugador.mano):
+            opciones = self.posibles_combinaciones(carta, self.mesa)
+            if opciones:
+                # Escoge la primera jugada válida
+                jugada = opciones[0]
+                jugador.capturar(jugada, self.mesa)
+                jugador.mano.remove(carta)
+                print(f"{jugador.nombre} capturó con {jugada}")
+                if not self.mesa:
+                    jugador.escobas += 1
+                    print(f"¡Escoba para {jugador.nombre}!")
+                return
+        # Si no hay jugada posible
+        carta = jugador.mano.pop(0)
+        self.mesa.append(carta)
+        print(f"{jugador.nombre} descarta {carta}")
+
+    def jugar_ronda(self):
+        while self.baraja.cartas:
+            self.repartir_manos()
+            for _ in range(3):
+                for jugador in self.jugadores:
+                    self.turno_jugador(jugador)
+
+        # Último en capturar se lleva la mesa
+        if self.mesa:
+            self.jugadores[-1].capturadas.extend(self.mesa)
+            print(f"{self.jugadores[-1].nombre} se lleva las últimas cartas de la mesa.")
+
+    def contar_puntos(self):
+        puntos = {}
+        for jugador in self.jugadores:
+            cartas = jugador.capturadas
+            oros = [c for c in cartas if c.palo == "oros"]
+            sietes = [c for c in cartas if c.valor == 7]
+            siete_bello = any(c.palo == "oros" and c.valor == 7 for c in cartas)
+            puntos[jugador.nombre] = jugador.escobas
+            if siete_bello:
+                puntos[jugador.nombre] += 1
+            if len(cartas) == max(len(j.capturadas) for j in self.jugadores):
+                puntos[jugador.nombre] += 1
+            if len(oros) == max(len([c for c in j.capturadas if c.palo == "oros"]) for j in self.jugadores):
+                puntos[jugador.nombre] += 1
+            if len(sietes) == max(len([c for c in j.capturadas if c.valor == 7]) for j in self.jugadores):
+                puntos[jugador.nombre] += 1
+        return puntos
