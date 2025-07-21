@@ -15,6 +15,3 @@ model.learn(total_timesteps=100)
 # Guardar el modelo entrenado
 model.save("escoba_dqn_model")
 print("Entrenamiento completo y modelo guardado.")
-
-if __name__ == "__main__":
-    train_agent()  
